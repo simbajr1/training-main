@@ -6,22 +6,22 @@ func QuadA(x, y int) { //function to print a rectangle
 	for row := 1; row <= y; row++ { //loop to print the rectangle
 		if row == 1 {
 			z01.PrintRune('o')                       //print the first row
-			for column := 2; column <= x; column++ { //column loop
+			for column := 2; column <= x; column++ { //column loop, prints column of the first row with a star
 				z01.PrintRune('*')
 			}
-			z01.PrintRune('o') //print the last character
-		} else if row == y { //print the last row
+			z01.PrintRune('o') //print the last character of the first row
+		} else if row == y { //print the last row with o
 			z01.PrintRune('o')
-			for column := 2; column <= x; column++ { //print the column of the last row
+			for column := 2; column <= x; column++ { //print the column of the last row with a star
 				z01.PrintRune('*')
 			}
-			z01.PrintRune('o') //print the last character
+			z01.PrintRune('o') //print the last character of the last row
 		} else {
-			z01.PrintRune('|') //print the column of the rectangle the height of the rectangle
+			z01.PrintRune('|') //print the column of the rectangle the height of the rectangle of the middle row
 			for column := 2; column <= x; column++ {
-				z01.PrintRune(' ') //print the space in the rectangle
+				z01.PrintRune(' ') //print the space in the rectangle of the middle row
 			}
-			z01.PrintRune('|') //print the last character of the column
+			z01.PrintRune('|') //print the last character of the column in the rectangle of the middle row
 		}
 		z01.PrintRune('\n')
 	}
