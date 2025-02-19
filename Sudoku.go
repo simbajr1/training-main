@@ -5,150 +5,104 @@ import (
 	"os"
 )
 
-const size = 9 // Sudoku grid size
-
-func main() {
-	// Check if exactly 9 arguments are provided
-	if len(os.Args) != 10 {
-		fmt.Println("Error")
-		return
-	}
-
-	// Create a 9x9 Sudoku board
-	board := make([][]int, size)
-	for i := range board {
-		board[i] = make([]int, size)
-	}
-
-	// Parse input arguments into the board
-	for i, arg := range os.Args[1:] {
-		// Check if each argument is exactly 9 characters long
-		if len(arg) != size {
-			fmt.Println("Error")
-			return
-		}
-		for j, char := range arg {
-			if char == '.' {
-				board[i][j] = 0 // Use 0 to represent empty cells
-			} else if char >= '1' && char <= '9' {
-				board[i][j] = int(char - '0') // Convert character to integer
-			} else {
-				fmt.Println("Error") // Invalid character
-				return
-			}
-		}
-	}
-
-	// Check if the initial board is valid
-	if !isValidSudoku(board) {
-		fmt.Println("Error")
-		return
-	}
-
-	// Solve the Sudoku
-	if !solveSudoku(board) {
-		fmt.Println("Error") // If no solution exists
-		return
-	}
-
-	// Print the solved Sudoku board
-	printBoard(board)
-}
-
-// isValidSudoku checks if the Sudoku board is valid
-func isValidSudoku(board [][]int) bool {
-	// Check rows and columns for duplicates
-	for i := 0; i < size; i++ {
-		row := make([]bool, size+1)
-		col := make([]bool, size+1)
-		for j := 0; j < size; j++ {
-			// Check row
-			if board[i][j] != 0 {
-				if row[board[i][j]] {
-					return false
-				}
-				row[board[i][j]] = true
-			}
-			// Check column
-			if board[j][i] != 0 {
-				if col[board[j][i]] {
-					return false
-				}
-				col[board[j][i]] = true
-			}
-		}
-	}
-
-	// Check 3x3 subgrids for duplicates
-	for i := 0; i < size; i += 3 {
-		for j := 0; j < size; j += 3 {
-			box := make([]bool, size+1)
-			for x := i; x < i+3; x++ {
-				for y := j; y < j+3; y++ {
-					if board[x][y] != 0 {
-						if box[board[x][y]] {
-							return false
+// solveSudoku attempts to solve the given Sudoku board using a backtracking algorithm.
+// It returns true if the board is successfully solved, otherwise false.
+func solveSudoku(board [][]byte) bool {
+	// Define a recursive function to attempt solving the Sudoku.
+	var solve func() bool
+	solve = func() bool {
+		// Iterate through each cell in the 9x9 board.
+		for r := 0; r < 9; r++ {
+			for c := 0; c < 9; c++ {
+				// Check if the current cell is empty (denoted by '.').
+				if board[r][c] == '.' {
+					// Try placing each number from '1' to '9' in the empty cell.
+					for num := byte('1'); num <= '9'; num++ {
+						// Check if placing the number is valid according to Sudoku rules.
+						if isValid(board, r, c, num) {
+							board[r][c] = num // Place the number on the board.
+							if solve() { // Recursively attempt to solve with this number placed.
+								return true // If successful, return true.
+							}
+							board[r][c] = '.' // Reset the cell if it leads to no solution.
 						}
-						box[board[x][y]] = true
 					}
+					return false // Return false if no number can be placed in this cell.
 				}
 			}
 		}
+		return true // Return true if all cells are filled correctly.
 	}
-
-	return true
+	return solve() // Start the solving process.
 }
 
-// solveSudoku solves the Sudoku using backtracking
-func solveSudoku(board [][]int) bool {
-	for i := 0; i < size; i++ {
-		for j := 0; j < size; j++ {
-			if board[i][j] == 0 { // Find an empty cell
-				for num := 1; num <= size; num++ { // Try numbers 1-9
-					if isSafe(board, i, j, num) { // Check if the number is safe
-						board[i][j] = num // Place the number
-						if solveSudoku(board) { // Recursively solve
-							return true
-						}
-						board[i][j] = 0 // Backtrack if no solution
-					}
-				}
-				return false // No valid number found
-			}
+// isValid checks if placing a number in a specific cell is valid according to Sudoku rules.
+// It ensures that the number does not already exist in the same row, column, or 3x3 subgrid.
+func isValid(board [][]byte, r, c int, num byte) bool {
+	for i := 0; i < 9; i++ {
+		// Check current row and column for duplicates.
+		if board[r][i] == num || board[i][c] == num ||
+			board[(r/3)*3+i/3][(c/3)*3+i%3] == num { // Check corresponding 3x3 subgrid.
+			return false // Return false if a duplicate is found.
 		}
 	}
-	return true // Sudoku solved
+	return true // Return true if no duplicates are found.
 }
 
-// isSafe checks if placing a number in a cell is safe
-func isSafe(board [][]int, row, col, num int) bool {
-	// Check row and column
-	for i := 0; i < size; i++ {
-		if board[row][i] == num || board[i][col] == num {
+// isValidInput checks if the input array conforms to expected Sudoku format.
+// It verifies that there are exactly 9 lines and each line contains exactly 9 characters,
+// with valid characters being '1'-'9' or '.' for empty cells.
+func isValidInput(input []string) bool {
+	if len(input) != 9 { // Ensure there are exactly 9 rows.
+		return false
+	}
+
+	for _, line := range input {
+		if len(line) != 9 { // Ensure each row has exactly 9 characters.
 			return false
 		}
-	}
-
-	// Check 3x3 subgrid
-	startRow := row - row%3
-	startCol := col - col%3
-	for i := 0; i < 3; i++ {
-		for j := 0; j < 3; j++ {
-			if board[startRow+i][startCol+j] == num {
+		for _, ch := range line {
+			if ch != '.' && (ch < '1' || ch > '9') { // Validate characters in each row.
 				return false
 			}
 		}
 	}
 
-	return true
+	return true // Return true if all checks pass.
 }
 
-// printBoard prints the Sudoku board
-func printBoard(board [][]int) {
-	for i := 0; i < size; i++ {
-		for j := 0; j < size; j++ {
-			fmt.Printf("%d ", board[i][j])
+// main function serves as the entry point of the program.
+// It reads input from command line arguments and processes it to solve a Sudoku puzzle.
+func main() {
+	if len(os.Args) != 10 { // Check for correct number of command line arguments (1 for program name + 9 for board).
+		fmt.Println("Error") // Print error message if incorrect number of arguments provided.
+		return
+	}
+
+	input := os.Args[1:] // Capture input lines from command line arguments.
+
+	if !isValidInput(input) { // Validate the input format before processing.
+		fmt.Println("Error") // Print error message for invalid input format.
+		return
+	}
+
+	board := make([][]byte, 9) // Create a new 2D slice to represent the Sudoku board.
+	for i, line := range input {
+		board[i] = []byte(line) // Convert each input string into a byte slice for processing.
+	}
+
+	if solveSudoku(board) { // Attempt to solve the Sudoku puzzle using the defined function.
+		for _, row := range board { // Iterate over each row of the solved board.
+			for i, num := range row {
+				if i != len(row)-1 {
+					fmt.Printf("%c ", num) // Print numbers with space between them except for last number in row.
+				} else {
+					fmt.Printf("%c", num) // Print last number without trailing space.
+				}
+			}
+			fmt.Println() // Move to next line after printing a row of numbers.
 		}
-		fmt.Println()
+	} else {
+		fmt.Println("Error") // Print error message if no solution exists for the given Sudoku puzzle.
 	}
 }
